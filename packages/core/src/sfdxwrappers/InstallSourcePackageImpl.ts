@@ -90,9 +90,6 @@ export default class InstallSourcePackageImpl {
         }
       }
 
-      SFPLogger.log("Assigning permission sets before deployment:",null,this.packageLogger, LoggerLevel.DEBUG);
-      this.applyPermsets(this.packageMetadata.assignPermSetsPreDeployment);
-
       //Apply Reconcile if Profiles are found
       //To Reconcile we have to go for multiple deploys, first we have to reconcile profiles and deploy the metadata
       let isReconcileActivated = false,
@@ -100,7 +97,7 @@ export default class InstallSourcePackageImpl {
       let profileFolders;
       if (
         this.packageMetadata.isProfilesFound &&
-        this.packageMetadata.reconcileProfiles !== false
+        this.packageMetadata.preDeploymentSteps?.includes("reconcile")
       ) {
         ({
           profileFolders,
@@ -166,8 +163,7 @@ export default class InstallSourcePackageImpl {
           );
         }
 
-        SFPLogger.log("Assigning permission sets after deployment:",null,this.packageLogger, LoggerLevel.DEBUG);
-        this.applyPermsets(this.packageMetadata.assignPermSetsPostDeployment);
+        this.applyPermsets();
 
         await ArtifactInstallationStatusChecker.updatePackageInstalledInOrg(
           this.targetusername,
@@ -215,15 +211,21 @@ export default class InstallSourcePackageImpl {
     }
   }
 
-  private applyPermsets(permsets: string[]) {
+  private applyPermsets() {
     try {
-      if (permsets) {
+      if (
+        new RegExp("AssignPermissionSets", "i").test(
+          this.packageMetadata.postDeploymentSteps?.toString()
+        ) &&
+        this.packageMetadata.permissionSetsToAssign
+      ) {
         let assignPermissionSetsImpl: AssignPermissionSetsImpl = new AssignPermissionSetsImpl(
           this.targetusername,
-          permsets,
+          this.packageMetadata.permissionSetsToAssign,
           this.sourceDirectory
         );
 
+        SFPLogger.log("Executing post-deployment step: AssignPermissionSets",null,this.packageLogger, LoggerLevel.DEBUG);
         assignPermissionSetsImpl.exec();
       }
     } catch (error) {

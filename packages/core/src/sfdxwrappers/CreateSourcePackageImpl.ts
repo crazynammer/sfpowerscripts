@@ -70,7 +70,15 @@ export default class CreateSourcePackageImpl {
         this.sfdx_package
       );
       packageDirectory = packageDescriptor["path"];
-      this.writeDeploymentStepsToArtifact(packageDescriptor);
+      this.packageArtifactMetadata.preDeploymentSteps = packageDescriptor[
+        "preDeploymentSteps"
+      ]?.split(",");
+      this.packageArtifactMetadata.postDeploymentSteps = packageDescriptor[
+        "postDeploymentSteps"
+      ]?.split(",");
+
+      this.packageArtifactMetadata.permissionSetsToAssign = packageDescriptor
+          .permissionSetsToAssign?.split(",");
     }
 
     //Generate Destructive Manifest
@@ -179,30 +187,6 @@ export default class CreateSourcePackageImpl {
     });
 
     return this.packageArtifactMetadata;
-  }
-
-  private writeDeploymentStepsToArtifact(packageDescriptor: any) {
-
-    this.packageArtifactMetadata.reconcileProfiles = packageDescriptor.reconcileProfiles;
-
-    if (packageDescriptor.assignPermSetsPreDeployment) {
-      if (packageDescriptor.assignPermSetsPreDeployment instanceof Array)
-        this.packageArtifactMetadata.assignPermSetsPreDeployment = packageDescriptor
-          .assignPermSetsPreDeployment;
-
-      else
-        throw new Error("Property 'assignPermSetsPreDeployment' must be of type array");
-    }
-
-
-    if (packageDescriptor.assignPermSetsPostDeployment) {
-      if (packageDescriptor.assignPermSetsPostDeployment instanceof Array)
-        this.packageArtifactMetadata.assignPermSetsPostDeployment = packageDescriptor
-          .assignPermSetsPostDeployment;
-
-      else
-        throw new Error("Property 'assignPermSetsPostDeployment' must be of type array");
-    }
   }
 
   private handleApexTestClasses(mdapiPackage: any) {
